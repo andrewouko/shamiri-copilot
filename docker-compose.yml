@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    # Parse DATABASE_URL (postgresql://USER:PASS@HOST:PORT/DB?...) into the
+    # individual vars the official postgres image expects for initialisation.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        _url="$${DATABASE_URL#postgresql://}"
+        _userinfo="$${_url%%@*}"
+        _rest="$${_url#*@}"
+        _db="$${_rest#*/}"
+        export POSTGRES_USER="$${_userinfo%%:*}"
+        export POSTGRES_PASSWORD="$${_userinfo#*:}"
+        export POSTGRES_DB="$${_db%%\?*}"
+        exec docker-entrypoint.sh postgres
+    ports:
+      - "54320:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

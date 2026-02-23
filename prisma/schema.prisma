@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Supervisor ───────────────────────────────────────────────────────────────
+// A semi-professional overseeing multiple Fellows in the Tiered Care Model.
+model Supervisor {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String   // bcrypt hash — never stored in plaintext
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reviews Review[]
+
+  @@map("supervisors")
+}
+
+// ─── Fellow ───────────────────────────────────────────────────────────────────
+// A lay provider (18–22 yrs) who delivers group therapy sessions.
+model Fellow {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions Session[]
+
+  @@map("fellows")
+}
+
+// ─── Session ──────────────────────────────────────────────────────────────────
+// A recorded group therapy session. The transcript is the raw source of truth
+// that the AI engine analyses.
+model Session {
+  id         String        @id @default(cuid())
+  fellowId   String
+  fellow     Fellow        @relation(fields: [fellowId], references: [id], onDelete: Cascade)
+  groupId    String        // e.g. "G-Alpha", denormalised for quick display
+  date       DateTime
+  transcript String        @db.Text
+  status     SessionStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  analysis Analysis?
+  review   Review?
+
+  @@index([fellowId])
+  @@index([groupId])
+  @@index([status])
+  @@map("sessions")
+}
+
+// ─── Analysis ─────────────────────────────────────────────────────────────────
+// AI-generated insight for a session. One-to-one with Session.
+// Scores follow the Shamiri 3-Point Quality Index.
+model Analysis {
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ── Narrative ──
+  summary String @db.Text // 3-sentence session overview
+
+  // ── Metric 1: Content Coverage ──
+  contentScore         Int    // 1 | 2 | 3
+  contentRating        String // "Missed" | "Partial" | "Complete"
+  contentJustification String @db.Text
+
+  // ── Metric 2: Facilitation Quality ──
+  facilitationScore         Int    // 1 | 2 | 3
+  facilitationRating        String // "Poor" | "Adequate" | "Excellent"
+  facilitationJustification String @db.Text
+
+  // ── Metric 3: Protocol Safety ──
+  safetyScore         Int    // 1 | 2 | 3
+  safetyRating        String // "Violation" | "Minor Drift" | "Adherent"
+  safetyJustification String @db.Text
+
+  // ── Risk Detection ──
+  riskFlag        RiskFlag // SAFE | RISK
+  riskQuote       String?  @db.Text // extracted verbatim if RISK
+  riskExplanation String?  @db.Text // reasoning behind the flag
+
+  // ── Meta ──
+  aiModel         String  // model string used for transparency
+  promptVersion   String  @default("v1") // allows prompt iteration tracking
+  inputTokens     Int     @default(0)
+  outputTokens    Int     @default(0)
+
+  @@map("analyses")
+}
+
+// ─── Review ───────────────────────────────────────────────────────────────────
+// Human-in-the-loop: a Supervisor validates or rejects the AI's findings.
+// Null score overrides mean "accept the AI's score."
+model Review {
+  id           String         @id @default(cuid())
+  sessionId    String         @unique
+  session      Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  supervisorId String
+  supervisor   Supervisor     @relation(fields: [supervisorId], references: [id])
+  decision     ReviewDecision // VALIDATED | REJECTED
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  // ── Supervisor overrides (null = accept AI value) ──
+  contentOverride      Int?    // 1 | 2 | 3
+  facilitationOverride Int?    // 1 | 2 | 3
+  safetyOverride       Int?    // 1 | 2 | 3
+  riskOverride         RiskFlag? // supervisor override for the AI's risk assessment
+
+  // ── Supervisor notes ──
+  note String? @db.Text
+
+  @@index([supervisorId])
+  @@map("reviews")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum SessionStatus {
+  PENDING   // transcript loaded, not yet analysed
+  PROCESSED // AI analysis complete, awaiting Supervisor review
+  FLAGGED   // AI detected RISK — needs urgent attention
+  SAFE      // Supervisor confirmed SAFE
+  REVIEWED  // Supervisor has submitted a review (may be validated or rejected)
+}
+
+enum RiskFlag {
+  SAFE
+  RISK
+}
+
+enum ReviewDecision {
+  VALIDATED // Supervisor agrees with the AI findings
+  REJECTED  // Supervisor disagrees — overrides applied
+}
