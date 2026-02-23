@@ -16,22 +16,24 @@ interface Props {
 
 export default async function SessionDetailPage({ params }: Props) {
   const { id } = await params;
-  const auth = await requireAuth().catch(() => null);
-  if (!auth) return null;
 
-  const session = await db.session.findUnique({
-    where: { id },
-    include: {
-      fellow: { select: { id: true, name: true } },
-      analysis: true,
-      review: {
-        include: {
-          supervisor: { select: { id: true, name: true } },
+  const [auth, session] = await Promise.all([
+    requireAuth().catch(() => null),
+    db.session.findUnique({
+      where: { id },
+      include: {
+        fellow: { select: { id: true, name: true } },
+        analysis: true,
+        review: {
+          include: {
+            supervisor: { select: { id: true, name: true } },
+          },
         },
       },
-    },
-  });
+    }),
+  ]);
 
+  if (!auth) return null;
   if (!session) notFound();
 
   const sessionDate = new Date(session.date).toLocaleDateString("en-GB", {

@@ -55,6 +55,7 @@ describe("GET /api/sessions", () => {
       supervisorId: "sup-1",
       name: "Test Supervisor",
       email: "supervisor@shamiri.org",
+      iat: 0,
     });
     vi.mocked(db.session.findMany).mockResolvedValue(mockSessions as never);
 

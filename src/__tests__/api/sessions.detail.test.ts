@@ -60,6 +60,7 @@ describe("GET /api/sessions/[id]", () => {
       supervisorId: "sup-1",
       name: "Test Supervisor",
       email: "supervisor@shamiri.org",
+      iat: 0,
     });
     vi.mocked(db.session.findUnique).mockResolvedValue(null);
 
@@ -75,6 +76,7 @@ describe("GET /api/sessions/[id]", () => {
       supervisorId: "sup-1",
       name: "Test Supervisor",
       email: "supervisor@shamiri.org",
+      iat: 0,
     });
     vi.mocked(db.session.findUnique).mockResolvedValue(mockSession as never);
 

@@ -27,7 +27,7 @@ import { requireAuth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { analyzeSession } from "@/lib/ai";
 
-const mockAuthSession = { supervisorId: "sup-1", name: "Supervisor", email: "supervisor@shamiri.org" };
+const mockAuthSession = { supervisorId: "sup-1", name: "Supervisor", email: "supervisor@shamiri.org", iat: 0 };
 
 const mockDbSession = {
   id: "session-1",

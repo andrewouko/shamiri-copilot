@@ -26,7 +26,7 @@ import { db } from "@/lib/db";
 const SESSION_ID = "cjld2cyuq0000t3rmniod1foy";
 const SUP_ID = "cjld2cz0h0002t3rmnv75cq5w";
 
-const mockAuthSession = { supervisorId: SUP_ID, name: "Supervisor", email: "supervisor@shamiri.org" };
+const mockAuthSession = { supervisorId: SUP_ID, name: "Supervisor", email: "supervisor@shamiri.org", iat: 0 };
 
 const mockSessionWithAnalysis = {
   id: SESSION_ID,

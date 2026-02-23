@@ -11,6 +11,7 @@ const mockSession = {
   supervisorId: "sup-1",
   name: "Test Supervisor",
   email: "supervisor@shamiri.org",
+  iat: 0,
 };
 
 describe("GET /api/auth/me", () => {

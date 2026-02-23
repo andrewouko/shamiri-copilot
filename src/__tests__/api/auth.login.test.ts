@@ -30,6 +30,8 @@ const mockSupervisor = {
   name: "Test Supervisor",
   email: "supervisor@shamiri.org",
   password: "$2a$10$hashedpassword",
+  createdAt: new Date(),
+  updatedAt: new Date(),
 };
 
 function makeRequest(body: unknown) {

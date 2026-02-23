@@ -7,29 +7,28 @@ import { SessionsTable } from "@/components/SessionsTable";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const auth = await requireAuth().catch(() => null);
-  if (!auth) {
-    // Middleware handles redirect — this is a fallback
-    return null;
-  }
-
-  const sessions = await db.session.findMany({
-    orderBy: { date: "desc" },
-    include: {
-      fellow: { select: { id: true, name: true } },
-      analysis: {
-        select: {
-          riskFlag: true,
-          contentScore: true,
-          facilitationScore: true,
-          safetyScore: true,
+  const [auth, sessions] = await Promise.all([
+    requireAuth().catch(() => null),
+    db.session.findMany({
+      orderBy: { date: "desc" },
+      include: {
+        fellow: { select: { id: true, name: true } },
+        analysis: {
+          select: {
+            riskFlag: true,
+            contentScore: true,
+            facilitationScore: true,
+            safetyScore: true,
+          },
+        },
+        review: {
+          select: { decision: true },
         },
       },
-      review: {
-        select: { decision: true },
-      },
-    },
-  });
+    }),
+  ]);
+
+  if (!auth) return null;
 
   const stats = {
     total: sessions.length,
